@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menus</title>
+</head>
+<body>
+
+{{range .}}
+<h1>{{.Type}}</h1>
+{{range .FoodItems}}
+<li>{{.}}</li>
+{{end}}
+{{end}}
+
+</body>
+</html>

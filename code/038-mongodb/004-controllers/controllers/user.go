@@ -49,3 +49,9 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, p ht
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s\n", uj)
 }
+
+// Method for deleting user
+func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	// Okay
+	w.WriteHeader(http.StatusOK)
+}

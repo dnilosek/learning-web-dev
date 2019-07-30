@@ -13,7 +13,7 @@ func main() {
 	router := httprouter.New()
 	router.GET("/user/:id", uc.GetUser)
 	router.POST("/user", uc.CreateUser)
-	//router.DELETE("/user/:id", deleteUser)
+	router.DELETE("/user/:id", uc.DeleteUser)
 
 	http.ListenAndServe(":8080", router)
 }

@@ -14,12 +14,42 @@ import (
 )
 
 type UserController struct {
-	session *mongo.Client
+	collection *mongo.Collection
 }
 
 // Factory method
 func NewUserController(c *mongo.Client) *UserController {
-	return &UserController{c}
+	collection := c.Database("go-web-dev-db").Collection("users")
+	return &UserController{collection}
+}
+
+// Method for getting all users
+func (uc UserController) GetUsers(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	cur, err := uc.collection.Find(context.TODO(), bson.D{{}})
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// Get all restuls
+	var results []models.User
+	for cur.Next(context.TODO()) {
+		// create a value into which the single document can be decoded
+		var elem models.User
+		err := cur.Decode(&elem)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		results = append(results, elem)
+	}
+
+	// Marshal and send back to user
+	uj, _ := json.Marshal(results)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "%s\n", uj)
 }
 
 // Method for getting user
@@ -27,7 +57,6 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 
 	// Get and find by id
 	id := p.ByName("id")
-	collection := uc.session.Database("go-web-dev-db").Collection("users")
 
 	// Create hex from id and find it
 	idHex, err := primitive.ObjectIDFromHex(id)
@@ -36,7 +65,7 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 		return
 	}
 	var u models.User
-	err = collection.FindOne(context.TODO(), bson.D{{"_id", idHex}}).Decode(&u)
+	err = uc.collection.FindOne(context.TODO(), bson.D{{"_id", idHex}}).Decode(&u)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -55,8 +84,7 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, p ht
 	u := models.User{}
 	json.NewDecoder(r.Body).Decode(&u)
 
-	collection := uc.session.Database("go-web-dev-db").Collection("users")
-	insertResult, err := collection.InsertOne(context.TODO(), u)
+	insertResult, err := uc.collection.InsertOne(context.TODO(), u)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -80,7 +108,6 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, p ht
 func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	// Get and find by id
 	id := p.ByName("id")
-	collection := uc.session.Database("go-web-dev-db").Collection("users")
 
 	// Create hex from id and find it
 	idHex, err := primitive.ObjectIDFromHex(id)
@@ -88,7 +115,7 @@ func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p ht
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	deleteResult, err := collection.DeleteOne(context.TODO(), bson.D{{"_id", idHex}})
+	deleteResult, err := uc.collection.DeleteOne(context.TODO(), bson.D{{"_id", idHex}})
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
